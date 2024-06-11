@@ -2,7 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\LanguageResource;
+use App\Lang\Lang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -34,6 +38,17 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'translations' => cache()->rememberForever('translations.' . app()->getLocale(), function () {
+                return collect(File::allFiles(base_path('lang/' . app()->getLocale())))
+                ->flatMap(function ($file) {
+                    return Arr::dot(
+                        File::getRequire($file->getRealpath()),
+                        $file->getBasename('.'. $file->getExtension()) . '.'
+                    );
+                });
+            }),
+            'language' => app()->getLocale(),
+            'languages' => LanguageResource::collection(Lang::cases()),
         ];
     }
 }
